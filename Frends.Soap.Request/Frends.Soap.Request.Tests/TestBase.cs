@@ -8,12 +8,10 @@ internal abstract class TestBase
 {
     internal TestBase()
     {
-        // TODO: Here you can load environment variables used in tests
         DotEnv.Load();
         SecretKey = GetEnvVar("FRENDS_SECRET_KEY");
     }
 
-    // TODO: Replace with your secret key or remove if not needed
     protected string SecretKey { get; set; }
 
     protected static Input DefaultInput() => new();

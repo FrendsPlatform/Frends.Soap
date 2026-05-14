@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Frends.Soap.Request.Definitions;
 
@@ -9,18 +8,18 @@ namespace Frends.Soap.Request.Definitions;
 public class Input
 {
     /// <summary>
-    /// The input string to be repeated and output.
+    /// Xml Body of a message that will be wrapped into Soap envelope.
     /// </summary>
-    /// <example>foobar</example>
-    [DisplayFormat(DataFormatString = "Text")]
-    [DefaultValue("Lorem ipsum dolor sit amet.")]
+    /// <example>&lt;GetWeather xmlns="http://example.com/"&gt;&lt;City&gt;London&lt;/City&gt;&lt;/GetWeather&gt;</example>
     [Required]
-    public string Content { get; set; } = string.Empty;
+    [DisplayFormat(DataFormatString = "Xml")]
+    public string MessageBody { get; set; } = string.Empty;
 
     /// <summary>
-    /// Number of times to repeat the input string.
+    /// The SOAPAction HTTP header value (SOAP 1.1) or the action parameter in Content-Type (SOAP 1.2).
+    /// Known as the WS-Specs / WS-Addressing action field.
     /// </summary>
-    /// <example>2</example>
-    [DefaultValue(3)]
-    public int Repeat { get; set; }
+    /// <example>http://example.com/service/GetWeather</example>
+    [DisplayFormat(DataFormatString = "Text")]
+    public string SoapAction { get; set; } = string.Empty;
 }
