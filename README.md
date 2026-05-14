@@ -1,11 +1,10 @@
-[//]: # (Update this file with actual SystemName and ActionName)
-# Frends.{SystemName}
+# Frends.Soap
 
-Frends tasks for {SystemName} related operations.
+Frends tasks for Soap related operations.
 
 # Tasks
 
-- [Frends.{SystemName}.{ActionName}](Frends.{SystemName}.{ActionName}/README.md)
+* [Frends.Soap.Request](Frends.Soap.Request/README.md)
 
 # Contributing
 
@@ -19,3 +18,4 @@ method with the owners of this repository before making a change.
 5. Submit a Pull request so that we can review your changes
 
 NOTE: Be sure to merge the latest from "upstream" before making a pull request!
+
