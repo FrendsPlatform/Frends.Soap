@@ -45,8 +45,8 @@ internal static class WsdlHandler
         wsdlDoc.LoadXml(wsdlContent);
 
         var nsMgr = new XmlNamespaceManager(wsdlDoc.NameTable);
-        nsMgr.AddNamespace("wsdl", "http://schemas.xmlsoap.org/wsdl/");
-        nsMgr.AddNamespace("xsd", "http://www.w3.org/2001/XMLSchema");
+        nsMgr.AddNamespace("wsdl", "https://schemas.xmlsoap.org/wsdl/");
+        nsMgr.AddNamespace("xsd", "https://www.w3.org/2001/XMLSchema");
 
         var schemaNodes = wsdlDoc.SelectNodes("//wsdl:types/xsd:schema | //types/schema", nsMgr);
         var schemaSet = new XmlSchemaSet();

@@ -9,7 +9,7 @@ internal abstract class TestBase
     internal TestBase()
     {
         DotEnv.Load();
-        SecretKey = GetEnvVar("FRENDS_SECRET_KEY");
+        SecretKey = Environment.GetEnvironmentVariable("FRENDS_SECRET_KEY") ?? string.Empty;
     }
 
     protected string SecretKey { get; set; }
@@ -19,8 +19,4 @@ internal abstract class TestBase
     protected static Connection DefaultConnection() => new();
 
     protected static Options DefaultOptions() => new();
-
-    private static string GetEnvVar(string name) => Environment.GetEnvironmentVariable(name) ??
-                                                    throw new InvalidOperationException(
-                                                        $"Missing required env var: {name}");
 }

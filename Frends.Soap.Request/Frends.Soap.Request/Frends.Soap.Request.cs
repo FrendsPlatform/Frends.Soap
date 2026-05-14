@@ -1,10 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Frends.Soap.Request.Definitions;
@@ -42,13 +38,9 @@ public static class Soap
             ValidationHandler.Run(input, connection, options);
             cancellationToken.ThrowIfCancellationRequested();
 
-            using var handler = BuildHttpClientHandler(connection);
-
-            // HttpClient in .NET 8 propagates W3C trace context headers (traceparent /
-            // tracestate) automatically via DiagnosticsHandler when Activity.Current != null.
+            using var handler = HttpHandler.BuildHttpClientHandler(connection);
             using var httpClient = new HttpClient(handler);
 
-            // ── WSDL loading & validation ──────────────────────────────────────────────
             string targetNamespace = null;
 
             if (options.WsdlSource != WsdlSource.None)
@@ -56,21 +48,25 @@ public static class Soap
                 var wsdlContent = await WsdlHandler.LoadWsdlContentAsync(options, httpClient, cancellationToken);
                 targetNamespace = WsdlHandler.GetTargetNamespace(wsdlContent);
 
-                var (isValid, validationError) = WsdlHandler.ValidateBodyAgainstWsdl(input.MessageBody, wsdlContent);
-                if (!isValid)
-                    throw new InvalidOperationException($"SOAP body validation against WSDL failed: {validationError}");
+                var validationResult = WsdlHandler.ValidateBodyAgainstWsdl(input.MessageBody, wsdlContent);
+                if (!validationResult.IsValid)
+                    throw new InvalidOperationException($"SOAP body validation against WSDL failed: {validationResult.Error}");
             }
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // ── Build & send the SOAP message ──────────────────────────────────────────
-            var soapEnvelope = SoapMessageBuilder.BuildEnvelope(input.MessageBody, options.SoapVersion, targetNamespace);
-            using var httpRequest = BuildHttpRequest(connection, input, options, soapEnvelope);
+            var soapEnvelope = SoapMessageBuilder.BuildEnvelope(
+                input.MessageBody,
+                options.SoapVersion,
+                options,
+                targetNamespace,
+                connection.Url,
+                input.SoapAction);
+            using var httpRequest = HttpHandler.BuildHttpRequest(connection, input, options, soapEnvelope);
 
             using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            // ── Response handling ──────────────────────────────────────────────────────
             var isSoapFault = SoapMessageBuilder.IsSoapFault(responseBody);
 
             if (response.IsSuccessStatusCode && !isSoapFault)
@@ -104,18 +100,11 @@ public static class Soap
                 Error = new Error { Message = errorMessage },
             };
         }
-        catch (OperationCanceledException)
-        {
-            throw; // Never suppress cancellation
-        }
         catch (Exception ex)
         {
             if (options.ThrowErrorOnFailure)
             {
-                var msg = string.IsNullOrEmpty(options.ErrorMessageOnFailure)
-                    ? ex.Message
-                    : options.ErrorMessageOnFailure;
-                throw new Exception(msg, ex);
+                ex.Handle(options);
             }
 
             var faultXml = SoapMessageBuilder.BuildFaultEnvelope(
@@ -136,78 +125,5 @@ public static class Soap
                 },
             };
         }
-    }
-
-    // ── Private helpers ────────────────────────────────────────────────────────────────
-    private static HttpClientHandler BuildHttpClientHandler(Connection connection)
-    {
-        var handler = new HttpClientHandler
-        {
-            CheckCertificateRevocationList = connection.CertificationRevocationCheck,
-        };
-
-        // ── Client certificate (mTLS only) ──────────────────────────────────────────
-        var cert = string.IsNullOrWhiteSpace(connection.ClientCertPassword)
-            ? new X509Certificate2(connection.ClientCertPath)
-            : new X509Certificate2(connection.ClientCertPath, connection.ClientCertPassword);
-        handler.ClientCertificates.Add(cert);
-
-        // ── Server certificate validation ─────────────────────────────────────────
-        if (connection.AllowInvalidCertificate)
-        {
-            handler.ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-        }
-        else if (connection.ServerCertificateThumbprints?.Length > 0)
-        {
-            var pinned = connection.ServerCertificateThumbprints;
-            handler.ServerCertificateCustomValidationCallback =
-                (_, cert, _, errors) =>
-                {
-                    if (errors == SslPolicyErrors.None) return true;
-                    return cert != null && Array.Exists(
-                        pinned,
-                        t => string.Equals(t, cert.Thumbprint, StringComparison.OrdinalIgnoreCase));
-                };
-        }
-
-        return handler;
-    }
-
-    private static HttpRequestMessage BuildHttpRequest(
-        Connection connection,
-        Input input,
-        Options options,
-        string soapEnvelope)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, connection.Url);
-
-        if (options.SoapVersion == SoapVersion.Soap11)
-        {
-            // SOAP 1.1: Content-Type text/xml + SOAPAction header (WS-Specs)
-            request.Content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
-            var soapAction = input.SoapAction ?? string.Empty;
-            request.Headers.Add("SOAPAction", $"\"{soapAction}\"");
-        }
-        else
-        {
-            // SOAP 1.2: Content-Type application/soap+xml with optional action parameter (WS-Specs)
-            request.Content = new StringContent(soapEnvelope, Encoding.UTF8, "application/soap+xml");
-            if (!string.IsNullOrWhiteSpace(input.SoapAction))
-            {
-                request.Content.Headers.ContentType!.Parameters.Add(
-                    new NameValueHeaderValue("action", $"\"{input.SoapAction}\""));
-            }
-        }
-
-        // ── OAuth2 Bearer token ────────────────────────────────────────────────────
-        if (connection.Authentication == Authentication.OAuth &&
-            !string.IsNullOrWhiteSpace(connection.OAuthToken))
-        {
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", connection.OAuthToken);
-        }
-
-        return request;
     }
 }

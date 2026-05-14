@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using System.Xml;
+using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
 
 namespace Frends.Soap.Request.Helpers;
@@ -10,8 +11,8 @@ namespace Frends.Soap.Request.Helpers;
 /// </summary>
 internal static class SoapMessageBuilder
 {
-    internal const string Soap11Namespace = "http://schemas.xmlsoap.org/soap/envelope/";
-    internal const string Soap12Namespace = "http://www.w3.org/2003/05/soap-envelope";
+    private const string Soap11Namespace = "https://schemas.xmlsoap.org/soap/envelope/";
+    private const string Soap12Namespace = "https://www.w3.org/2003/05/soap-envelope";
 
     /// <summary>
     /// Wraps the given body XML inside a SOAP envelope according to the specified version.
@@ -20,24 +21,39 @@ internal static class SoapMessageBuilder
     /// </summary>
     /// <param name="body">The raw XML body to embed inside the SOAP Body element.</param>
     /// <param name="version">SOAP version that determines the envelope namespace.</param>
+    /// <param name="options">Additional SOAP request options, including the WS-* header toggles.</param>
     /// <param name="targetNamespace">Optional target namespace extracted from the WSDL.</param>
+    /// <param name="endpointUrl">The SOAP endpoint URL used as a sensible default for address-based headers.</param>
+    /// <param name="soapAction">The logical SOAP action used for the WS-Addressing Action header.</param>
     /// <returns>A UTF-8 encoded SOAP envelope XML string.</returns>
-    internal static string BuildEnvelope(string body, SoapVersion version, string targetNamespace = null)
+    internal static string BuildEnvelope(
+        string body,
+        SoapVersion version,
+        Options options,
+        string targetNamespace = "",
+        string endpointUrl = "",
+        string soapAction = "")
     {
         var soapNs = version == SoapVersion.Soap11 ? Soap11Namespace : Soap12Namespace;
 
         var doc = new XmlDocument();
-        doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
 
         var envelope = doc.CreateElement("soap", "Envelope", soapNs);
         if (!string.IsNullOrWhiteSpace(targetNamespace))
             envelope.SetAttribute("xmlns:tns", targetNamespace);
         doc.AppendChild(envelope);
 
+        if (WsSpecificationsHandler.HasHeaders(options))
+        {
+            var headerElem = doc.CreateElement("soap", "Header", soapNs);
+            envelope.AppendChild(headerElem);
+
+            WsSpecificationsHandler.AppendHeaders(doc, headerElem, soapNs, options, endpointUrl, soapAction);
+        }
+
         var bodyElem = doc.CreateElement("soap", "Body", soapNs);
         envelope.AppendChild(bodyElem);
 
-        // Parse and import the message body so it stays well-formed XML
         var bodyDoc = new XmlDocument();
         bodyDoc.LoadXml(body);
         bodyElem.AppendChild(doc.ImportNode(bodyDoc.DocumentElement, true));
@@ -57,7 +73,6 @@ internal static class SoapMessageBuilder
         var soapNs = version == SoapVersion.Soap11 ? Soap11Namespace : Soap12Namespace;
 
         var doc = new XmlDocument();
-        doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
 
         var envelope = doc.CreateElement("soap", "Envelope", soapNs);
         doc.AppendChild(envelope);
@@ -71,8 +86,8 @@ internal static class SoapMessageBuilder
         if (version == SoapVersion.Soap11)
         {
             // SOAP 1.1 Fault structure
-            AppendTextElement(doc, fault, null, "faultcode", null, faultCode);
-            AppendTextElement(doc, fault, null, "faultstring", null, faultMessage);
+            AppendTextElement(doc, fault, string.Empty, "faultcode", string.Empty, faultCode);
+            AppendTextElement(doc, fault, string.Empty, "faultstring", string.Empty, faultMessage);
         }
         else
         {
@@ -119,21 +134,6 @@ internal static class SoapMessageBuilder
         }
     }
 
-    private static void AppendTextElement(
-        XmlDocument doc,
-        XmlElement parent,
-        string prefix,
-        string localName,
-        string ns,
-        string value)
-    {
-        var elem = string.IsNullOrEmpty(prefix)
-            ? doc.CreateElement(localName)
-            : doc.CreateElement(prefix, localName, ns);
-        elem.InnerText = value;
-        parent.AppendChild(elem);
-    }
-
     private static string SerializeDocument(XmlDocument doc)
     {
         using var ms = new MemoryStream();
@@ -147,5 +147,20 @@ internal static class SoapMessageBuilder
             doc.WriteTo(writer);
 
         return Encoding.UTF8.GetString(ms.ToArray());
+    }
+
+    private static void AppendTextElement(
+        XmlDocument doc,
+        XmlElement parent,
+        string prefix,
+        string localName,
+        string ns,
+        string value)
+    {
+        var elem = string.IsNullOrEmpty(prefix)
+            ? doc.CreateElement(localName)
+            : doc.CreateElement(prefix, localName, ns);
+        elem.InnerText = value;
+        parent.AppendChild(elem);
     }
 }

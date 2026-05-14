@@ -16,7 +16,7 @@ public class Connection
     /// <example>https://example.org/path/to</example>
     [Required]
     [DisplayFormat(DataFormatString = "Text")]
-    public string Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Method of authenticating request.
