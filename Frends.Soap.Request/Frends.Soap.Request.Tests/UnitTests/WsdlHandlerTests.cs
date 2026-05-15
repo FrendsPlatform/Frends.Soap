@@ -1,8 +1,8 @@
-namespace Frends.Soap.Request.Tests.UnitTests;
-
 using System.IO;
 using Frends.Soap.Request.Helpers;
 using NUnit.Framework;
+
+namespace Frends.Soap.Request.Tests.UnitTests;
 
 [TestFixture]
 public class WsdlHandlerTests

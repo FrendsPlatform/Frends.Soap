@@ -18,6 +18,27 @@ function buildSoapFault(message, version) {
         : `<soap:Fault><faultcode>soap:Server</faultcode><faultstring>${message}</faultstring></soap:Fault>`;
     return `<?xml version="1.0" encoding="UTF-8"?>\n<soap:Envelope xmlns:soap="${ns}">\n    <soap:Body>\n        ${faultBody}\n    </soap:Body>\n</soap:Envelope>`;
 }
+function getSampleWsdl() {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://schemas.xmlsoap.org/wsdl/"
+             xmlns:tns="https://example.com/weatherservice"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="https://schemas.xmlsoap.org/wsdl/soap/"
+             targetNamespace="https://example.com/weatherservice"
+             name="WeatherService">
+    <types>
+        <xsd:schema targetNamespace="https://example.com/weatherservice">
+            <xsd:element name="GetWeather">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="City" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:schema>
+    </types>
+</definitions>`;
+}
 function handleRequest(req, res) {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -29,6 +50,13 @@ function handleRequest(req, res) {
             res.end('OK');
             return;
         }
+
+        if (method === 'GET' && pathname === '/wsdl') {
+            res.writeHead(200, { 'Content-Type': 'application/wsdl+xml' });
+            res.end(getSampleWsdl());
+            return;
+        }
+
         if (method !== 'POST') {
             res.writeHead(405);
             res.end('Method Not Allowed');
@@ -42,6 +70,27 @@ function handleRequest(req, res) {
                 res.writeHead(200, { 'Content-Type': 'application/xml' });
                 res.end(buildSoapEnvelope('<EchoResponse xmlns="https://example.com/service"><Result>Echo received</Result></EchoResponse>', version));
                 break;
+            case '/soap/client-cert-auth': {
+                const peerCert = req.socket.getPeerCertificate();
+                const hasClientCert = peerCert && Object.keys(peerCert).length > 0;
+                const subjectCn = hasClientCert && peerCert.subject ? peerCert.subject.CN : '';
+
+                if (!hasClientCert) {
+                    res.writeHead(401, { 'Content-Type': 'application/xml' });
+                    res.end(buildSoapFault('Client certificate required', version));
+                    return;
+                }
+
+                if (subjectCn !== 'Test Client Certificate') {
+                    res.writeHead(403, { 'Content-Type': 'application/xml' });
+                    res.end(buildSoapFault('Client certificate rejected', version));
+                    return;
+                }
+
+                res.writeHead(200, { 'Content-Type': 'application/xml' });
+                res.end(buildSoapEnvelope('<EchoResponse xmlns="https://example.com/service"><Result>Client certificate accepted</Result></EchoResponse>', version));
+                break;
+            }
             case '/soap11/success':
                 res.writeHead(200, { 'Content-Type': 'text/xml' });
                 res.end(buildSoapEnvelope('<SuccessResponse xmlns="https://example.com/service"><Status>Success</Status></SuccessResponse>', '1.1'));
@@ -92,6 +141,7 @@ http.createServer(handleRequest).listen(8080, () => console.log('HTTP on 8080'))
 const tlsOpts = {
     key: fs.readFileSync('/app/server-key.pem'),
     cert: fs.readFileSync('/app/server-cert.pem'),
+    requestCert: true,
     rejectUnauthorized: false
 };
 https.createServer(tlsOpts, handleRequest).listen(8443, () => console.log('HTTPS on 8443'));

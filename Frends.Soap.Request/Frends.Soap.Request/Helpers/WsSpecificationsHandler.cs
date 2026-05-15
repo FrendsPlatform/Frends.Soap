@@ -1,8 +1,8 @@
-namespace Frends.Soap.Request.Helpers;
-
 using System;
 using System.Xml;
 using Frends.Soap.Request.Definitions;
+
+namespace Frends.Soap.Request.Helpers;
 
 /// <summary>
 /// Builds and validates WS-* specification headers for SOAP envelopes.

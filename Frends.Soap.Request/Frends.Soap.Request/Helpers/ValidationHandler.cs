@@ -1,8 +1,8 @@
-namespace Frends.Soap.Request.Helpers;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+
+namespace Frends.Soap.Request.Helpers;
 
 /// <summary>
 /// Validates objects by their ValidationAttributes.

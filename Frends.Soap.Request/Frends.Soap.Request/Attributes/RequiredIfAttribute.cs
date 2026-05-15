@@ -1,8 +1,8 @@
-namespace Frends.Soap.Request.Attributes;
-
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+
+namespace Frends.Soap.Request.Attributes;
 
 /// <summary>
 /// Validates that a property is required if another property has a specific value.

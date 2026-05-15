@@ -1,9 +1,9 @@
-namespace Frends.Soap.Request.Definitions;
-
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Frends.Soap.Request.Attributes;
 using Frends.Soap.Request.Definitions.Enums;
+
+namespace Frends.Soap.Request.Definitions;
 
 /// <summary>
 /// Connection parameters.

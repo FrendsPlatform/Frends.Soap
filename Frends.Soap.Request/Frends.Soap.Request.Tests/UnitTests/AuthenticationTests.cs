@@ -1,9 +1,9 @@
-namespace Frends.Soap.Request.Tests.UnitTests;
-
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
 using Frends.Soap.Request.Helpers;
 using NUnit.Framework;
+
+namespace Frends.Soap.Request.Tests.UnitTests;
 
 [TestFixture]
 public class AuthenticationTests

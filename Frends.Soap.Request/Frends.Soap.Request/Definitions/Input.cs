@@ -1,6 +1,6 @@
-﻿namespace Frends.Soap.Request.Definitions;
+﻿using System.ComponentModel.DataAnnotations;
 
-using System.ComponentModel.DataAnnotations;
+namespace Frends.Soap.Request.Definitions;
 
 /// <summary>
 /// Essential parameters.

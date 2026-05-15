@@ -1,9 +1,9 @@
-﻿namespace Frends.Soap.Request.Definitions;
-
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Frends.Soap.Request.Attributes;
 using Frends.Soap.Request.Definitions.Enums;
+
+namespace Frends.Soap.Request.Definitions;
 
 /// <summary>
 /// Additional parameters.
@@ -51,7 +51,7 @@ public class Options
     [DisplayFormat(DataFormatString = "Text")]
     [UIHint(nameof(IncludeWsSecurity), "", true)]
     [RequiredIf(nameof(IncludeWsSecurity), true)]
-    public string WsSecurityPasswordType { get; set; }
+    public string WsSecurityPasswordType { get; set; } = string.Empty;
 
     /// <summary>
     /// Validity window for the WS-Security timestamp, in minutes.
@@ -84,11 +84,11 @@ public class Options
     /// WS-Addressing ReplyTo address.
     /// </summary>
     /// <example>https://www.w3.org/2005/08/addressing/anonymous</example>
-    [DefaultValue("https://www.w3.org/2005/08/addressing/anonymous")]
+    [DefaultValue("")]
     [DisplayFormat(DataFormatString = "Text")]
     [UIHint(nameof(IncludeWsAddressing), "", true)]
     [RequiredIf(nameof(IncludeWsAddressing), true)]
-    public string WsAddressingReplyTo { get; set; } = "https://www.w3.org/2005/08/addressing/anonymous";
+    public string WsAddressingReplyTo { get; set; } = string.Empty;
 
     /// <summary>
     /// Include the WS-ReliableMessaging header block in the SOAP envelope.
@@ -143,21 +143,21 @@ public class Options
     /// WS-Trust request type URI.
     /// </summary>
     /// <example>https://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue</example>
-    [DefaultValue("https://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue")]
+    [DefaultValue("")]
     [DisplayFormat(DataFormatString = "Text")]
     [UIHint(nameof(IncludeWsTrust), "", true)]
     [RequiredIf(nameof(IncludeWsTrust), true)]
-    public string WsTrustRequestType { get; set; } = "https://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue";
+    public string WsTrustRequestType { get; set; } = string.Empty;
 
     /// <summary>
     /// WS-Trust token type URI.
     /// </summary>
     /// <example>urn:oasis:names:tc:SAML:2.0:assertion</example>
-    [DefaultValue("urn:oasis:names:tc:SAML:2.0:assertion")]
+    [DefaultValue("")]
     [DisplayFormat(DataFormatString = "Text")]
     [UIHint(nameof(IncludeWsTrust), "", true)]
     [RequiredIf(nameof(IncludeWsTrust), true)]
-    public string WsTrustTokenType { get; set; } = "urn:oasis:names:tc:SAML:2.0:assertion";
+    public string WsTrustTokenType { get; set; }
 
     /// <summary>
     /// WS-Trust AppliesTo address.

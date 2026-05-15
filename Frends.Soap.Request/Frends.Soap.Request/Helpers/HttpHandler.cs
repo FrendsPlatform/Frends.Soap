@@ -1,5 +1,3 @@
-namespace Frends.Soap.Request.Helpers;
-
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,6 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
+
+namespace Frends.Soap.Request.Helpers;
 
 /// <summary>
 /// Creates HTTP client handlers and SOAP HTTP request messages.
