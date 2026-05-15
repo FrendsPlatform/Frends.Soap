@@ -1,3 +1,5 @@
+namespace Frends.Soap.Request.Helpers;
+
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,8 +8,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
-
-namespace Frends.Soap.Request.Helpers;
 
 /// <summary>
 /// Creates HTTP client handlers and SOAP HTTP request messages.
@@ -21,10 +21,13 @@ internal static class HttpHandler
             CheckCertificateRevocationList = connection.CertificationRevocationCheck,
         };
 
-        var cert = string.IsNullOrWhiteSpace(connection.ClientCertPassword)
-            ? new X509Certificate2(connection.ClientCertPath)
-            : new X509Certificate2(connection.ClientCertPath, connection.ClientCertPassword);
-        handler.ClientCertificates.Add(cert);
+        if (connection.Authentication == Authentication.ClientCertificate)
+        {
+            var cert = string.IsNullOrWhiteSpace(connection.ClientCertPassword)
+                ? new X509Certificate2(connection.ClientCertPath)
+                : new X509Certificate2(connection.ClientCertPath, connection.ClientCertPassword);
+            handler.ClientCertificates.Add(cert);
+        }
 
         if (connection.AllowInvalidCertificate)
         {

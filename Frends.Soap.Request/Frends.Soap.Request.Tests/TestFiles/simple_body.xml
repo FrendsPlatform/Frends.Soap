@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Echo xmlns="https://example.com/service">
+    <Message>Hello World</Message>
+</Echo>
+

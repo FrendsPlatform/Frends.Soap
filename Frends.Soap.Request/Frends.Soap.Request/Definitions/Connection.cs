@@ -1,9 +1,9 @@
+namespace Frends.Soap.Request.Definitions;
+
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Frends.Soap.Request.Attributes;
 using Frends.Soap.Request.Definitions.Enums;
-
-namespace Frends.Soap.Request.Definitions;
 
 /// <summary>
 /// Connection parameters.
@@ -56,7 +56,6 @@ public class Connection
     /// </summary>
     /// <example>MyStrongPassword123</example>
     [UIHint(nameof(Authentication), "", Authentication.ClientCertificate)]
-    [RequiredIf(nameof(Authentication), Authentication.ClientCertificate)]
     [PasswordPropertyText]
     [DisplayFormat(DataFormatString = "Text")]
     public string ClientCertPassword { get; set; } = string.Empty;

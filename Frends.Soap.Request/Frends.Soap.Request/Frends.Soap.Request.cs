@@ -49,8 +49,12 @@ public static class Soap
                 targetNamespace = WsdlHandler.GetTargetNamespace(wsdlContent);
 
                 var validationResult = WsdlHandler.ValidateBodyAgainstWsdl(input.MessageBody, wsdlContent);
+
                 if (!validationResult.IsValid)
-                    throw new InvalidOperationException($"SOAP body validation against WSDL failed: {validationResult.Error}");
+                {
+                    throw new InvalidOperationException(
+                        $"SOAP body validation against WSDL failed: {validationResult.Error}");
+                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -70,18 +74,25 @@ public static class Soap
             var isSoapFault = SoapMessageBuilder.IsSoapFault(responseBody);
 
             if (response.IsSuccessStatusCode && !isSoapFault)
-                return new Result { Success = true, XmlResponse = responseBody };
+            {
+                return new Result
+                {
+                    Success = true,
+                    XmlResponse = responseBody,
+                };
+            }
 
             // Either an HTTP error or a SOAP Fault was returned
             var errorMessage = isSoapFault
                 ? "SOAP Fault received from the endpoint"
-                : $"HTTP error {(int)response.StatusCode}: {response.ReasonPhrase}";
+                : $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
 
             if (options.ThrowErrorOnFailure)
             {
                 var messageToThrow = string.IsNullOrEmpty(options.ErrorMessageOnFailure)
                     ? $"{errorMessage}\n{responseBody}"
                     : options.ErrorMessageOnFailure;
+
                 throw new HttpRequestException(messageToThrow);
             }
 
@@ -90,14 +101,17 @@ public static class Soap
                 ? responseBody
                 : SoapMessageBuilder.BuildFaultEnvelope(
                     options.SoapVersion == SoapVersion.Soap11 ? "soap:Server" : "soap:Receiver",
-                    $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}",
+                    errorMessage,
                     options.SoapVersion);
 
             return new Result
             {
                 Success = false,
                 XmlResponse = faultXml,
-                Error = new Error { Message = errorMessage },
+                Error = new Error
+                {
+                    Message = $"{options.ErrorMessageOnFailure}: {errorMessage}",
+                },
             };
         }
         catch (Exception ex)

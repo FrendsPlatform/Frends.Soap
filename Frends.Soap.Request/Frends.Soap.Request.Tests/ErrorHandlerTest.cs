@@ -1,9 +1,9 @@
-﻿using System;
+﻿namespace Frends.Soap.Request.Tests;
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-
-namespace Frends.Soap.Request.Tests;
 
 [TestFixture]
 internal class ErrorHandlerTest : TestBase

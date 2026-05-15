@@ -1,6 +1,6 @@
-using System;
-
 namespace Frends.Soap.Request.Definitions;
+
+using System;
 
 /// <summary>
 /// Error that occurred during the task.

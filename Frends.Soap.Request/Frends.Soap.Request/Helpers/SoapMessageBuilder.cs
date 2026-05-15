@@ -1,10 +1,10 @@
-﻿using System.IO;
+﻿namespace Frends.Soap.Request.Helpers;
+
+using System.IO;
 using System.Text;
 using System.Xml;
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
-
-namespace Frends.Soap.Request.Helpers;
 
 /// <summary>
 /// Builds SOAP 1.1 and 1.2 envelopes and fault messages.

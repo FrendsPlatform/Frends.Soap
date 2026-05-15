@@ -1,8 +1,8 @@
+namespace Frends.Soap.Request.Tests;
+
 using System;
 using dotenv.net;
 using Frends.Soap.Request.Definitions;
-
-namespace Frends.Soap.Request.Tests;
 
 internal abstract class TestBase
 {

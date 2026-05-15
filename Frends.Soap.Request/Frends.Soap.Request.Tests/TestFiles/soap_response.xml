@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="https://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <GetWeatherResponse xmlns="https://example.com/weatherservice">
+            <Temperature>20</Temperature>
+            <Condition>Sunny</Condition>
+        </GetWeatherResponse>
+    </soap:Body>
+</soap:Envelope>
+

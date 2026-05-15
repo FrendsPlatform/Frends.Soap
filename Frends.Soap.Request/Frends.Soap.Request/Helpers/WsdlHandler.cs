@@ -1,3 +1,5 @@
+namespace Frends.Soap.Request.Helpers;
+
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -7,8 +9,6 @@ using System.Xml;
 using System.Xml.Schema;
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
-
-namespace Frends.Soap.Request.Helpers;
 
 internal static class WsdlHandler
 {
