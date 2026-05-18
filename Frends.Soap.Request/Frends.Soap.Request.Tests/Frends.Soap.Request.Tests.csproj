@@ -24,8 +24,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="TestFiles/**/*">
+        <Content Include="TestFiles/**/*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
+        </Content>
     </ItemGroup>
 </Project>

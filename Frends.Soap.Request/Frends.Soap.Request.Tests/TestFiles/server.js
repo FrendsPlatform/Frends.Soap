@@ -39,6 +39,11 @@ function getSampleWsdl() {
     </types>
 </definitions>`;
 }
+function buildHeaderEchoEnvelope(headers, version) {
+    const customOne = headers['x-custom-header-one'] || headers['x-test-header-one'] || '';
+    const customTwo = headers['x-custom-header-two'] || headers['x-test-header-two'] || '';
+    return buildSoapEnvelope(`<HeaderResponse xmlns="https://example.com/service"><HeaderOne>${customOne}</HeaderOne><HeaderTwo>${customTwo}</HeaderTwo></HeaderResponse>`, version);
+}
 function handleRequest(req, res) {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -65,10 +70,35 @@ function handleRequest(req, res) {
         const version = (req.headers['content-type'] || '').includes('soap+xml') ? '1.2' : '1.1';
         const authHeader = req.headers['authorization'] || '';
         const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        const basicToken = Buffer.from('basic-user:basic-pass').toString('base64');
         switch (pathname) {
             case '/soap/echo':
                 res.writeHead(200, { 'Content-Type': 'application/xml' });
                 res.end(buildSoapEnvelope('<EchoResponse xmlns="https://example.com/service"><Result>Echo received</Result></EchoResponse>', version));
+                break;
+            case '/soap/custom-headers':
+                res.writeHead(200, { 'Content-Type': 'application/xml' });
+                res.end(buildHeaderEchoEnvelope(req.headers, version));
+                break;
+            case '/soap/redirect-start':
+                res.writeHead(307, { Location: '/soap/echo' });
+                res.end();
+                break;
+            case '/soap/slow':
+                setTimeout(() => {
+                    res.writeHead(200, { 'Content-Type': 'application/xml' });
+                    res.end(buildSoapEnvelope('<SlowResponse xmlns="https://example.com/service"><Status>Slow response</Status></SlowResponse>', version));
+                }, 4000);
+                break;
+            case '/soap/basic-auth':
+                if (authHeader !== `Basic ${basicToken}`) {
+                    res.writeHead(401, { 'Content-Type': 'application/xml' });
+                    res.end(buildSoapFault('Unauthorized', version));
+                    return;
+                }
+
+                res.writeHead(200, { 'Content-Type': 'application/xml' });
+                res.end(buildSoapEnvelope('<BasicAuthResponse xmlns="https://example.com/service"><Status>Basic auth accepted</Status></BasicAuthResponse>', version));
                 break;
             case '/soap/client-cert-auth': {
                 const peerCert = req.socket.getPeerCertificate();

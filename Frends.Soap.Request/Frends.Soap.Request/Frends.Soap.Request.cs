@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Frends.Soap.Request.Definitions;
@@ -10,21 +9,18 @@ using Frends.Soap.Request.Helpers;
 namespace Frends.Soap.Request;
 
 /// <summary>
-/// Task Class for Soap operations.
+/// SOAP request task.
+/// [Documentation] https://github.com/FrendsPlatform/Frends.Soap/tree/main/Frends.Soap.Request#readme
 /// </summary>
 public static class Soap
 {
     /// <summary>
-    /// Sends a SOAP 1.1 or 1.2 request with the given message body.
-    /// Supports OAuth2 Bearer token, mTLS, certificate pinning, certificate revocation
-    /// checking, and optional WSDL-based body validation.
-    /// W3C Trace Context headers (traceparent / tracestate) are propagated automatically
-    /// by the .NET HttpClient when a distributed tracing Activity is active.
-    /// [Documentation](https://tasks.frends.com/tasks/frends-tasks/Frends-Soap-Request)
+    /// Sends a SOAP request using the provided connection, input, and options.
+    /// [Documentation] https://github.com/FrendsPlatform/Frends.Soap/tree/main/Frends.Soap.Request#readme
     /// </summary>
-    /// <param name="input">Essential parameters.</param>
-    /// <param name="connection">Connection parameters.</param>
-    /// <param name="options">Additional parameters.</param>
+    /// <param name="input">Input parameters provided by Frends Platform.</param>
+    /// <param name="connection">Connection parameters provided by Frends Platform.</param>
+    /// <param name="options">Additional options provided by Frends Platform.</param>
     /// <param name="cancellationToken">A cancellation token provided by Frends Platform.</param>
     /// <returns>object { bool Success, string XmlResponse, object Error { string Message, Exception AdditionalInfo } }</returns>
     public static async Task<Result> Request(
@@ -38,81 +34,79 @@ public static class Soap
             ValidationHandler.Run(input, connection, options);
             cancellationToken.ThrowIfCancellationRequested();
 
-            using var handler = HttpHandler.BuildHttpClientHandler(connection);
-            using var httpClient = new HttpClient(handler);
-
-            string targetNamespace = null;
-
-            if (options.WsdlSource != WsdlSource.None)
+            var (httpClient, shouldDisposeHttpClient) = HttpHandler.GetHttpClient(connection);
+            try
             {
-                var wsdlContent = await WsdlHandler.LoadWsdlContentAsync(options, httpClient, cancellationToken);
-                targetNamespace = WsdlHandler.GetTargetNamespace(wsdlContent);
-
-                var validationResult = WsdlHandler.ValidateBodyAgainstWsdl(input.MessageBody, wsdlContent);
-
-                if (!validationResult.IsValid)
+                string targetNamespace = null;
+                if (options.WsdlSource != WsdlSource.None)
                 {
-                    throw new InvalidOperationException(
-                        $"SOAP body validation against WSDL failed: {validationResult.Error}");
+                    var wsdlContent = await WsdlHandler.LoadWsdlContentAsync(options, httpClient, cancellationToken);
+                    targetNamespace = WsdlHandler.GetTargetNamespace(wsdlContent);
+
+                    var validationResult = WsdlHandler.ValidateBodyAgainstWsdl(input.MessageBody, wsdlContent);
+                    if (!validationResult.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"SOAP body validation against WSDL failed: {validationResult.Error}");
+                    }
                 }
-            }
 
-            cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
-            var soapEnvelope = SoapMessageBuilder.BuildEnvelope(
-                input.MessageBody,
-                options.SoapVersion,
-                options,
-                targetNamespace,
-                connection.Url,
-                input.SoapAction);
-            using var httpRequest = HttpHandler.BuildHttpRequest(connection, input, options, soapEnvelope);
+                var soapEnvelope = SoapMessageBuilder.BuildEnvelope(
+                    input.MessageBody,
+                    options.SoapVersion,
+                    options,
+                    targetNamespace,
+                    connection.Url,
+                    input.SoapAction);
 
-            using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var httpRequest = HttpHandler.BuildHttpRequest(connection, input, options, soapEnvelope);
+                using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                var isSoapFault = SoapMessageBuilder.IsSoapFault(responseBody);
 
-            var isSoapFault = SoapMessageBuilder.IsSoapFault(responseBody);
-
-            if (response.IsSuccessStatusCode && !isSoapFault)
-            {
-                return new Result
+                if (response.IsSuccessStatusCode && !isSoapFault)
                 {
-                    Success = true,
-                    XmlResponse = responseBody,
-                };
-            }
+                    return new Result
+                    {
+                        Success = true,
+                        XmlResponse = responseBody,
+                    };
+                }
 
-            // Either an HTTP error or a SOAP Fault was returned
-            var errorMessage = isSoapFault
-                ? "SOAP Fault received from the endpoint"
-                : $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
-
-            if (options.ThrowErrorOnFailure)
-            {
-                var messageToThrow = string.IsNullOrEmpty(options.ErrorMessageOnFailure)
-                    ? $"{errorMessage}\n{responseBody}"
+                var errorMessage = isSoapFault
+                    ? "SOAP Fault received from the endpoint"
+                    : $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
+                var resultErrorMessage = string.IsNullOrEmpty(options.ErrorMessageOnFailure)
+                    ? errorMessage
                     : options.ErrorMessageOnFailure;
 
-                throw new HttpRequestException(messageToThrow);
-            }
-
-            // Return the SOAP Fault XML as-is when already a fault, otherwise wrap in one
-            var faultXml = isSoapFault
-                ? responseBody
-                : SoapMessageBuilder.BuildFaultEnvelope(
-                    options.SoapVersion == SoapVersion.Soap11 ? "soap:Server" : "soap:Receiver",
-                    errorMessage,
-                    options.SoapVersion);
-
-            return new Result
-            {
-                Success = false,
-                XmlResponse = faultXml,
-                Error = new Error
+                if (options.ThrowErrorOnFailure)
                 {
-                    Message = $"{options.ErrorMessageOnFailure}: {errorMessage}",
-                },
-            };
+                    var messageToThrow = $"{resultErrorMessage}\n{responseBody}";
+                    throw new InvalidOperationException(messageToThrow);
+                }
+
+                var faultXml = isSoapFault
+                    ? responseBody
+                    : SoapMessageBuilder.BuildFaultEnvelope(
+                        options.SoapVersion == SoapVersion.Soap11 ? "soap:Server" : "soap:Receiver",
+                        errorMessage,
+                        options.SoapVersion);
+
+                return new Result
+                {
+                    Success = false,
+                    XmlResponse = faultXml,
+                    Error = ErrorHandler.CreateError(resultErrorMessage, responseBody),
+                };
+            }
+            finally
+            {
+                if (shouldDisposeHttpClient)
+                    httpClient.Dispose();
+            }
         }
         catch (Exception ex)
         {

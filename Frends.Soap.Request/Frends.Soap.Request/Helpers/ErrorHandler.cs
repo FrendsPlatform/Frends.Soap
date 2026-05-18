@@ -23,6 +23,15 @@ internal static class ErrorHandler
         return ReturnResult(exception, options.ErrorMessageOnFailure);
     }
 
+    internal static Error CreateError(string message, string additionalInfoMessage)
+    {
+        return new Error
+        {
+            Message = message,
+            AdditionalInfo = new Exception(additionalInfoMessage),
+        };
+    }
+
     private static void ThrowIfCanceled(Exception exception, bool throwCanceled = true)
     {
         if (throwCanceled && exception is OperationCanceledException) throw exception;

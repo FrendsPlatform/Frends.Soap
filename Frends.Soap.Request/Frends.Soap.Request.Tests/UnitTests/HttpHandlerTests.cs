@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net.Http;
 using Frends.Soap.Request.Definitions;
@@ -72,7 +73,7 @@ public class HttpHandlerTests
         var actionParam = request.Content?.Headers.ContentType?.Parameters
             .FirstOrDefault(p => p.Name == "action");
         Assert.That(actionParam, Is.Not.Null);
-        Assert.That(actionParam?.Value, Is.EqualTo("\"https://example.com/GetWeather\""));
+        Assert.That(actionParam.Value, Is.EqualTo("\"https://example.com/GetWeather\""));
     }
 
     [Test]
@@ -135,5 +136,76 @@ public class HttpHandlerTests
         // Assert
         Assert.That(request.Headers.Contains("SOAPAction"), Is.True);
         Assert.That(request.Headers.GetValues("SOAPAction").First(), Is.EqualTo("\"\""));
+    }
+
+    [Test]
+    public void BuildHttpRequest_WithCustomHeaders_AddsHeaders()
+    {
+        // Arrange
+        var connection = new Connection
+        {
+            Url = TestUrl,
+            Authentication = Authentication.None,
+            CustomHeaders =
+            [
+                new Header { Name = "X-Custom-Header-One", Value = "ValueOne" },
+                new Header { Name = "X-Custom-Header-Two", Value = "ValueTwo" },
+            ],
+        };
+        var input = new Input { MessageBody = "<test/>" };
+        var options = new Options
+        {
+            SoapVersion = SoapVersion.Soap12,
+            IncludeWsSecurity = false,
+            IncludeWsAddressing = false,
+            IncludeWsReliableMessaging = false,
+            IncludeWsPolicy = false,
+            IncludeWsTrust = false,
+            IncludeWsFederation = false,
+            WsSecurityUsername = "user",
+            WsSecurityPassword = "pass",
+            WsSecurityPasswordType = "PasswordText",
+        };
+
+        // Act
+        using var request = HttpHandler.BuildHttpRequest(connection, input, options, TestSoapEnvelope);
+
+        // Assert
+        Assert.That(request.Headers.TryGetValues("X-Custom-Header-One", out var firstValues), Is.True);
+        Assert.That(firstValues.First(), Is.EqualTo("ValueOne"));
+        Assert.That(request.Headers.TryGetValues("X-Custom-Header-Two", out var secondValues), Is.True);
+        Assert.That(secondValues.First(), Is.EqualTo("ValueTwo"));
+    }
+
+    [Test]
+    public void BuildHttpRequest_WithHttpProtocolVersion_SetsRequestVersion()
+    {
+        // Arrange
+        var connection = new Connection
+        {
+            Url = TestUrl,
+            Authentication = Authentication.None,
+            HttpProtocolVersion = HttpProtocolVersion.Http20,
+        };
+        var input = new Input { MessageBody = "<test/>" };
+        var options = new Options
+        {
+            SoapVersion = SoapVersion.Soap12,
+            IncludeWsSecurity = false,
+            IncludeWsAddressing = false,
+            IncludeWsReliableMessaging = false,
+            IncludeWsPolicy = false,
+            IncludeWsTrust = false,
+            IncludeWsFederation = false,
+            WsSecurityUsername = "user",
+            WsSecurityPassword = "pass",
+            WsSecurityPasswordType = "PasswordText",
+        };
+
+        // Act
+        using var request = HttpHandler.BuildHttpRequest(connection, input, options, TestSoapEnvelope);
+
+        // Assert
+        Assert.That(request.Version, Is.EqualTo(new Version(2, 0)));
     }
 }

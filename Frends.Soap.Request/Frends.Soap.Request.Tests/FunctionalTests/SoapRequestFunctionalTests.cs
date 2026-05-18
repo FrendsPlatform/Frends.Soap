@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -10,6 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Text;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Frends.Soap.Request.Definitions;
@@ -123,14 +126,13 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "Request should succeed");
-        Assert.That(result.XmlResponse, Is.Not.Null.And.Not.Empty, "Response should contain data");
-        Assert.That(result.XmlResponse, Does.Contain("Envelope"), "Response should be valid SOAP");
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.XmlResponse, Is.Not.Null.And.Not.Empty);
+        Assert.That(result.XmlResponse, Does.Contain("Envelope"));
         Assert.That(
             result.XmlResponse,
-            Does.Contain("https://schemas.xmlsoap.org/soap/envelope/"),
-            "Should use SOAP 1.1 namespace");
-        Assert.That(result.Error, Is.Null, "No error on successful request");
+            Does.Contain("https://schemas.xmlsoap.org/soap/envelope/"));
+        Assert.That(result.Error, Is.Null);
     }
 
     [Test]
@@ -166,13 +168,12 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "Request should succeed");
+        Assert.That(result.Success, Is.True);
         Assert.That(result.XmlResponse, Is.Not.Null.And.Not.Empty);
         Assert.That(result.XmlResponse, Does.Contain("Envelope"));
         Assert.That(
             result.XmlResponse,
-            Does.Contain("https://www.w3.org/2003/05/soap-envelope"),
-            "Should use SOAP 1.2 namespace");
+            Does.Contain("https://www.w3.org/2003/05/soap-envelope"));
 
         // Verify response is valid XML
         var doc = new XmlDocument();
@@ -221,8 +222,178 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "OAuth authenticated request should succeed");
+        Assert.That(result.Success, Is.True);
         Assert.That(result.XmlResponse, Does.Contain("Envelope"));
+    }
+
+    [Test]
+    public async Task Request_WithBasicAuthentication_Succeeds()
+    {
+        var input = new Input
+        {
+            MessageBody = @"<GetWeather xmlns=""https://example.com/service""><City>Prague</City></GetWeather>",
+            SoapAction = "GetWeather",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/basic-auth",
+            Authentication = Authentication.Basic,
+            BasicUsername = "basic-user",
+            BasicPassword = "basic-pass",
+            AllowInvalidCertificate = true,
+        };
+
+        var options = new Options
+        {
+            SoapVersion = SoapVersion.Soap12,
+            IncludeWsSecurity = false,
+            IncludeWsAddressing = false,
+            IncludeWsReliableMessaging = false,
+            IncludeWsPolicy = false,
+            IncludeWsTrust = false,
+            IncludeWsFederation = false,
+            ThrowErrorOnFailure = false,
+            WsSecurityUsername = "user",
+            WsSecurityPassword = "pass",
+            WsSecurityPasswordType = "PasswordText",
+        };
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
+    }
+
+    [Test]
+    public async Task Request_WithCustomHeaders_Succeeds()
+    {
+        var input = new Input
+        {
+            MessageBody = @"<Echo xmlns=""https://example.com/service""><Message>Headers</Message></Echo>",
+            SoapAction = "Echo",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/custom-headers",
+            Authentication = Authentication.None,
+            AllowInvalidCertificate = true,
+            CustomHeaders =
+            [
+                new Header { Name = "X-Custom-Header-One", Value = "ValueOne" },
+                new Header { Name = "X-Custom-Header-Two", Value = "ValueTwo" },
+            ],
+        };
+
+        var options = CreateDefaultOptions();
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.XmlResponse, Does.Contain("ValueOne"));
+        Assert.That(result.XmlResponse, Does.Contain("ValueTwo"));
+    }
+
+    [Test]
+    public async Task Request_WithRedirectFollowing_Succeeds()
+    {
+        var input = new Input
+        {
+            MessageBody = @"<Echo xmlns=""https://example.com/service""><Message>Redirect</Message></Echo>",
+            SoapAction = "Echo",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/redirect-start",
+            Authentication = Authentication.None,
+            AllowInvalidCertificate = true,
+            FollowRedirects = true,
+        };
+
+        var options = CreateDefaultOptions();
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
+    }
+
+    [Test]
+    public async Task Request_WithoutRedirectFollowing_Fails()
+    {
+        var input = new Input
+        {
+            MessageBody = @"<Echo xmlns=""https://example.com/service""><Message>NoRedirect</Message></Echo>",
+            SoapAction = "Echo",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/redirect-start",
+            Authentication = Authentication.None,
+            AllowInvalidCertificate = true,
+            FollowRedirects = false,
+        };
+
+        var options = CreateDefaultOptions();
+        options.ThrowErrorOnFailure = false;
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task Request_WithTimeout_Fails()
+    {
+        var input = new Input
+        {
+            MessageBody = @"<Echo xmlns=""https://example.com/service""><Message>Timeout</Message></Echo>",
+            SoapAction = "Echo",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/slow",
+            Authentication = Authentication.None,
+            AllowInvalidCertificate = true,
+            ConnectionTimeoutSeconds = 1,
+        };
+
+        var options = CreateDefaultOptions();
+        options.ThrowErrorOnFailure = false;
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task Request_ThroughProxy_Succeeds()
+    {
+        await using var proxy = new TestHttpProxy(httpUrl);
+
+        var input = new Input
+        {
+            MessageBody = @"<Echo xmlns=""https://example.com/service""><Message>Proxy</Message></Echo>",
+            SoapAction = "Echo",
+        };
+
+        var connection = new Connection
+        {
+            Url = $"{httpUrl}/soap/echo",
+            Authentication = Authentication.None,
+            AllowInvalidCertificate = true,
+            ProxyAddress = proxy.ProxyUrl,
+        };
+
+        var options = CreateDefaultOptions();
+
+        var result = await Soap.Request(input, connection, options, CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
     }
 
     [Test]
@@ -334,10 +505,10 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.False, "Request should fail on SOAP Fault");
-        Assert.That(result.XmlResponse, Does.Contain("Fault"), "Response should contain SOAP Fault");
-        Assert.That(result.Error, Is.Not.Null, "Error object should be populated");
-        Assert.That(result.Error.Message, Does.Contain("SOAP Fault"), "Error message should indicate SOAP Fault");
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.XmlResponse, Does.Contain("Fault"));
+        Assert.That(result.Error, Is.Not.Null);
+        Assert.That(result.Error.Message, Does.Contain("SOAP Fault"));
     }
 
     [Test]
@@ -373,8 +544,8 @@ public class SoapRequestFunctionalTests
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.XmlResponse, Does.Contain("Fault"), "HTTP error should be wrapped in SOAP Fault");
-        Assert.That(result.Error?.Message, Does.Contain("404"), "Error should reference HTTP 404");
+        Assert.That(result.XmlResponse, Does.Contain("Fault"));
+        Assert.That(result.Error?.Message, Does.Contain("404"));
     }
 
     [Test]
@@ -415,7 +586,7 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "WSDL validation should pass with valid body");
+        Assert.That(result.Success, Is.True);
     }
 
     [Test]
@@ -527,7 +698,7 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "Should connect via HTTPS with self-signed certificate");
+        Assert.That(result.Success, Is.True);
         Assert.That(result.XmlResponse, Does.Contain("Envelope"));
     }
 
@@ -567,7 +738,7 @@ public class SoapRequestFunctionalTests
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True, "Request with multiple WS-* specs should succeed");
+        Assert.That(result.Success, Is.True);
     }
 
     [Test]
@@ -744,7 +915,7 @@ public class SoapRequestFunctionalTests
 
         var options = CreateDefaultOptions();
         options.WsdlSource = WsdlSource.File;
-        options.WsdlPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestFiles", "sample.wsdl");
+        options.WsdlPath = GetTestFilePath("sample.wsdl");
 
         var result = await Soap.Request(input, connection, options, CancellationToken.None);
 
@@ -801,12 +972,192 @@ public class SoapRequestFunctionalTests
         Assert.That(result.Success, Is.True);
     }
 
+    private sealed class TestHttpProxy : IAsyncDisposable
+    {
+        private readonly TcpListener listener;
+        private readonly CancellationTokenSource cancellationTokenSource = new();
+        private readonly Task acceptLoop;
+        private readonly string targetBaseUrl;
+
+        public TestHttpProxy(string targetBaseUrl)
+        {
+            this.targetBaseUrl = targetBaseUrl;
+
+            var port = GetFreePort();
+            ProxyUrl = $"http://localhost:{port}";
+            listener = new TcpListener(IPAddress.Loopback, port);
+            listener.Start();
+
+            acceptLoop = Task.Run(AcceptLoopAsync);
+        }
+
+        public string ProxyUrl { get; }
+
+        public async ValueTask DisposeAsync()
+        {
+            cancellationTokenSource.Cancel();
+            listener.Stop();
+
+            try
+            {
+                await acceptLoop;
+            }
+            catch
+            {
+                // Ignore shutdown races.
+            }
+
+            cancellationTokenSource.Dispose();
+        }
+
+        private async Task AcceptLoopAsync()
+        {
+            while (!cancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    var client = await listener.AcceptTcpClientAsync(cancellationTokenSource.Token);
+                    _ = Task.Run(() => HandleClientAsync(client));
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (SocketException)
+                {
+                    break;
+                }
+            }
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            using (client)
+            {
+                await using var stream = client.GetStream();
+
+                try
+                {
+                    var requestLine = await ReadLineAsync(stream);
+                    if (string.IsNullOrWhiteSpace(requestLine))
+                        return;
+
+                    var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    while (true)
+                    {
+                        var headerLine = await ReadLineAsync(stream);
+                        if (headerLine.Length == 0)
+                            break;
+
+                        var separatorIndex = headerLine.IndexOf(':');
+                        if (separatorIndex <= 0)
+                            continue;
+
+                        headers[headerLine[..separatorIndex]] = headerLine[(separatorIndex + 1)..].Trim();
+                    }
+
+                    var contentLength = 0;
+                    if (headers.TryGetValue("Content-Length", out var contentLengthValue))
+                        int.TryParse(contentLengthValue, out contentLength);
+
+                    if (contentLength > 0)
+                        await stream.ReadExactlyAsync(new byte[contentLength]);
+
+                    var soapVersion = headers.TryGetValue("Content-Type", out var contentType) &&
+                                      contentType.Contains("soap+xml", StringComparison.OrdinalIgnoreCase)
+                        ? "1.2"
+                        : "1.1";
+
+                    var soapNamespace = soapVersion == "1.2"
+                        ? "https://www.w3.org/2003/05/soap-envelope"
+                        : "https://schemas.xmlsoap.org/soap/envelope/";
+                    var responseXml = $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"{soapNamespace}\">\n    <soap:Body>\n        <ProxyResponse xmlns=\"https://example.com/service\"><Status>Proxy response</Status></ProxyResponse>\n    </soap:Body>\n</soap:Envelope>";
+                    var responseBody = Encoding.UTF8.GetBytes(responseXml);
+                    var reasonPhrase = "OK";
+
+                    var responseHeaders = new StringBuilder();
+                    responseHeaders.AppendLine($"HTTP/1.1 200 {reasonPhrase}");
+
+                    responseHeaders.AppendLine($"Content-Length: {responseBody.Length}");
+                    responseHeaders.AppendLine("Content-Type: application/xml");
+                    responseHeaders.AppendLine("Connection: close");
+                    responseHeaders.AppendLine();
+
+                    var responseHeaderBytes = Encoding.ASCII.GetBytes(responseHeaders.ToString());
+                    await stream.WriteAsync(responseHeaderBytes, cancellationTokenSource.Token);
+
+                    if (responseBody.Length > 0)
+                        await stream.WriteAsync(responseBody, cancellationTokenSource.Token);
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine($"Proxy request handling failed: {ex.Message}");
+                }
+            }
+        }
+
+        private static async Task<string> ReadLineAsync(NetworkStream stream)
+        {
+            var buffer = new List<byte>();
+            var lastWasCarriageReturn = false;
+
+            while (true)
+            {
+                var readBuffer = new byte[1];
+                var bytesRead = await stream.ReadAsync(readBuffer, 0, 1);
+                if (bytesRead == 0)
+                    break;
+
+                var currentByte = readBuffer[0];
+                if (currentByte == '\n' && lastWasCarriageReturn)
+                {
+                    buffer.RemoveAt(buffer.Count - 1);
+                    break;
+                }
+
+                buffer.Add(currentByte);
+                lastWasCarriageReturn = currentByte == '\r';
+            }
+
+            return Encoding.ASCII.GetString(buffer.ToArray());
+        }
+
+        private static int GetFreePort()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
+        }
+    }
+
     private static string LoadTestFile(string filename)
     {
-        var testFilesPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "TestFiles");
-        var filePath = Path.Combine(testFilesPath, filename);
+        var filePath = GetTestFilePath(filename);
 
         return File.ReadAllText(filePath);
+    }
+
+    private static string GetTestFilePath(string filename)
+    {
+        var candidate = Path.GetFullPath(Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "..",
+            "..",
+            "..",
+            "..",
+            "TestFiles",
+            filename));
+
+        if (File.Exists(candidate))
+            return candidate;
+
+        return Path.Combine(TestContext.CurrentContext.TestDirectory, "TestFiles", filename);
     }
 
     private static void BuildDockerImage(string testFilesPath)
@@ -933,3 +1284,4 @@ public class SoapRequestFunctionalTests
         File.WriteAllBytes(certPath, cert.Export(X509ContentType.Pfx, password));
     }
 }
+
