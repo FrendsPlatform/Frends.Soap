@@ -11,16 +11,6 @@ public enum SslProtocolVersion
     SystemDefault = 0,
 
     /// <summary>
-    /// TLS 1.0.
-    /// </summary>
-    Tls = 1,
-
-    /// <summary>
-    /// TLS 1.1.
-    /// </summary>
-    Tls11 = 2,
-
-    /// <summary>
     /// TLS 1.2.
     /// </summary>
     Tls12 = 3,

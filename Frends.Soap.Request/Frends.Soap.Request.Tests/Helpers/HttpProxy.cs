@@ -14,12 +14,9 @@ public sealed class HttpProxy : IAsyncDisposable
     private readonly TcpListener listener;
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly Task acceptLoop;
-    private readonly string targetBaseUrl;
 
-    public HttpProxy(string targetBaseUrl)
+    public HttpProxy()
     {
-        this.targetBaseUrl = targetBaseUrl;
-
         var port = GetFreePort();
         ProxyUrl = $"http://localhost:{port}";
         listener = new TcpListener(IPAddress.Loopback, port);
@@ -45,6 +42,45 @@ public sealed class HttpProxy : IAsyncDisposable
         }
 
         cancellationTokenSource.Dispose();
+    }
+
+    private static async Task<string> ReadLineAsync(NetworkStream stream)
+    {
+        var buffer = new List<byte>();
+        var lastWasCarriageReturn = false;
+
+        while (true)
+        {
+            var readBuffer = new byte[1];
+            var bytesRead = await stream.ReadAsync(readBuffer, 0, 1);
+
+            if (bytesRead == 0)
+                break;
+
+            var currentByte = readBuffer[0];
+
+            if (currentByte == '\n' && lastWasCarriageReturn)
+            {
+                buffer.RemoveAt(buffer.Count - 1);
+
+                break;
+            }
+
+            buffer.Add(currentByte);
+            lastWasCarriageReturn = currentByte == '\r';
+        }
+
+        return Encoding.ASCII.GetString(buffer.ToArray());
+    }
+
+    private static int GetFreePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+
+        return port;
     }
 
     private async Task AcceptLoopAsync()
@@ -140,44 +176,5 @@ public sealed class HttpProxy : IAsyncDisposable
                 TestContext.WriteLine($"Proxy request handling failed: {ex.Message}");
             }
         }
-    }
-
-    private static async Task<string> ReadLineAsync(NetworkStream stream)
-    {
-        var buffer = new List<byte>();
-        var lastWasCarriageReturn = false;
-
-        while (true)
-        {
-            var readBuffer = new byte[1];
-            var bytesRead = await stream.ReadAsync(readBuffer, 0, 1);
-
-            if (bytesRead == 0)
-                break;
-
-            var currentByte = readBuffer[0];
-
-            if (currentByte == '\n' && lastWasCarriageReturn)
-            {
-                buffer.RemoveAt(buffer.Count - 1);
-
-                break;
-            }
-
-            buffer.Add(currentByte);
-            lastWasCarriageReturn = currentByte == '\r';
-        }
-
-        return Encoding.ASCII.GetString(buffer.ToArray());
-    }
-
-    private static int GetFreePort()
-    {
-        var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-
-        return port;
     }
 }

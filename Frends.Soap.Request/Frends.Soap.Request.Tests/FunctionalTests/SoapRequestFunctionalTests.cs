@@ -379,7 +379,7 @@ public class SoapRequestFunctionalTests
     [Test]
     public async Task Request_ThroughProxy_Succeeds()
     {
-        await using var proxy = new HttpProxy(httpUrl);
+        await using var proxy = new HttpProxy();
 
         var input = new Input
         {

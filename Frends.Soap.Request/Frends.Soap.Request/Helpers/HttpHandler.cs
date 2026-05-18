@@ -203,8 +203,6 @@ internal static class HttpHandler
         return version switch
         {
             SslProtocolVersion.SystemDefault => SslProtocols.None,
-            SslProtocolVersion.Tls => SslProtocols.Tls,
-            SslProtocolVersion.Tls11 => SslProtocols.Tls11,
             SslProtocolVersion.Tls12 => SslProtocols.Tls12,
             SslProtocolVersion.Tls13 => SslProtocols.Tls13,
             _ => SslProtocols.None,
