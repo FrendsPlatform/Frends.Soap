@@ -25,4 +25,3 @@ public enum HttpProtocolVersion
     /// </summary>
     Http30 = 3,
 }
-

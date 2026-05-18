@@ -30,5 +30,3 @@ public enum SslProtocolVersion
     /// </summary>
     Tls13 = 4,
 }
-
-

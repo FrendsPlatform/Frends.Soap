@@ -1,5 +1,3 @@
-using System.ComponentModel;
-
 namespace Frends.Soap.Request.Definitions;
 
 /// <summary>
@@ -19,4 +17,3 @@ public class Header
     /// <example>Some value</example>
     public string Value { get; set; }
 }
-

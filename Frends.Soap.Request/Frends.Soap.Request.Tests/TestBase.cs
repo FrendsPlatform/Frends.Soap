@@ -1,4 +1,3 @@
-using System;
 using Frends.Soap.Request.Definitions;
 
 namespace Frends.Soap.Request.Tests;
