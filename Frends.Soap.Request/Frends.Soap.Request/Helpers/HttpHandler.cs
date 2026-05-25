@@ -73,10 +73,8 @@ internal static class HttpHandler
         {
             var pinned = connection.ServerCertificateThumbprints;
             handler.ServerCertificateCustomValidationCallback =
-                (_, serverCert, _, errors) =>
+                (_, serverCert, _, _) =>
                 {
-                    if (errors == SslPolicyErrors.None) return true;
-
                     return serverCert != null && Array.Exists(
                         pinned,
                         t => string.Equals(t, serverCert.Thumbprint, StringComparison.OrdinalIgnoreCase));

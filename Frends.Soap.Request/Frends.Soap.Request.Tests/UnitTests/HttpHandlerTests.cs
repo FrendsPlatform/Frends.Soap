@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Frends.Soap.Request.Definitions;
 using Frends.Soap.Request.Definitions.Enums;
 using Frends.Soap.Request.Helpers;
@@ -207,5 +210,61 @@ public class HttpHandlerTests
 
         // Assert
         Assert.That(request.Version, Is.EqualTo(new Version(2, 0)));
+    }
+
+    [Test]
+    public void BuildHttpClientHandler_WithPinnedThumbprint_RejectsDifferentCertificateEvenWithoutSslErrors()
+    {
+        // Arrange
+        var pinnedCert = CreateSelfSignedCertificate();
+        var otherCert = CreateSelfSignedCertificate();
+        var connection = new Connection
+        {
+            Url = TestUrl,
+            Authentication = Authentication.None,
+            ServerCertificateThumbprints = [pinnedCert.Thumbprint],
+        };
+
+        // Act
+        using var handler = HttpHandler.BuildHttpClientHandler(connection);
+        var isAllowed = handler.ServerCertificateCustomValidationCallback?.Invoke(
+            null!,
+            otherCert,
+            null,
+            SslPolicyErrors.None);
+
+        // Assert
+        Assert.That(isAllowed, Is.False);
+    }
+
+    [Test]
+    public void BuildHttpClientHandler_WithPinnedThumbprint_AllowsMatchingCertificate()
+    {
+        // Arrange
+        var pinnedCert = CreateSelfSignedCertificate();
+        var connection = new Connection
+        {
+            Url = TestUrl,
+            Authentication = Authentication.None,
+            ServerCertificateThumbprints = [pinnedCert.Thumbprint],
+        };
+
+        // Act
+        using var handler = HttpHandler.BuildHttpClientHandler(connection);
+        var isAllowed = handler.ServerCertificateCustomValidationCallback?.Invoke(
+            null!,
+            pinnedCert,
+            null,
+            SslPolicyErrors.None);
+
+        // Assert
+        Assert.That(isAllowed, Is.True);
+    }
+
+    private static X509Certificate2 CreateSelfSignedCertificate()
+    {
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
     }
 }
