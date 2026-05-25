@@ -150,8 +150,8 @@ public sealed class HttpProxy : IAsyncDisposable
                     : "1.1";
 
                 var soapNamespace = soapVersion == "1.2"
-                    ? "https://www.w3.org/2003/05/soap-envelope"
-                    : "https://schemas.xmlsoap.org/soap/envelope/";
+                    ? "http://www.w3.org/2003/05/soap-envelope"
+                    : "http://schemas.xmlsoap.org/soap/envelope/";
                 var responseXml =
                     $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"{soapNamespace}\">\n    <soap:Body>\n        <ProxyResponse xmlns=\"https://example.com/service\"><Status>Proxy response</Status></ProxyResponse>\n    </soap:Body>\n</soap:Envelope>";
                 var responseBody = Encoding.UTF8.GetBytes(responseXml);
