@@ -2,7 +2,7 @@
 <definitions xmlns="https://schemas.xmlsoap.org/wsdl/"
              xmlns:tns="https://example.com/weatherservice"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-             xmlns:soap="https://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
              targetNamespace="https://example.com/weatherservice"
              name="WeatherService">
 

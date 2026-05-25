@@ -5,14 +5,14 @@ const fs = require('fs');
 const url = require('url');
 function buildSoapEnvelope(body, version) {
     const ns = version === '1.2'
-        ? 'https://www.w3.org/2003/05/soap-envelope'
-        : 'https://schemas.xmlsoap.org/soap/envelope/';
+        ? 'http://www.w3.org/2003/05/soap-envelope'
+        : 'http://schemas.xmlsoap.org/soap/envelope/';
     return `<?xml version="1.0" encoding="UTF-8"?>\n<soap:Envelope xmlns:soap="${ns}">\n    <soap:Body>\n        ${body}\n    </soap:Body>\n</soap:Envelope>`;
 }
 function buildSoapFault(message, version) {
     const ns = version === '1.2'
-        ? 'https://www.w3.org/2003/05/soap-envelope'
-        : 'https://schemas.xmlsoap.org/soap/envelope/';
+        ? 'http://www.w3.org/2003/05/soap-envelope'
+        : 'http://schemas.xmlsoap.org/soap/envelope/';
     const faultBody = version === '1.2'
         ? `<soap:Fault><soap:Code><soap:Value>soap:Receiver</soap:Value></soap:Code><soap:Reason><soap:Text xml:lang="en">${message}</soap:Text></soap:Reason></soap:Fault>`
         : `<soap:Fault><faultcode>soap:Server</faultcode><faultstring>${message}</faultstring></soap:Fault>`;
@@ -23,7 +23,7 @@ function getSampleWsdl() {
 <definitions xmlns="https://schemas.xmlsoap.org/wsdl/"
              xmlns:tns="https://example.com/weatherservice"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-             xmlns:soap="https://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
              targetNamespace="https://example.com/weatherservice"
              name="WeatherService">
     <types>

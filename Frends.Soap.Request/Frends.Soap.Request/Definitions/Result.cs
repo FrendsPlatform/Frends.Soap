@@ -14,7 +14,17 @@ public class Result
     /// <summary>
     /// Response to the message.
     /// </summary>
-    /// <example>foobar,foobar</example>
+    /// <example>
+    ///     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    ///     &lt;soap:Envelope xmlns:soap="https://schemas.xmlsoap.org/soap/envelope/"&gt;
+    ///     &lt;soap:Body&gt;
+    ///         &lt;GetWeatherResponse xmlns="https://example.com/weatherservice"&gt;
+    ///             &lt;Temperature&gt;20&lt;/Temperature&gt;
+    ///             &lt;Condition&gt;Sunny&lt;/Condition&gt;
+    ///         &lt;/GetWeatherResponse&gt;
+    ///     &lt;/soap:Body&gt;
+    ///     &lt;/soap:Envelope&gt;
+    /// </example>
     public string XmlResponse { get; set; }
 
     /// <summary>

@@ -11,8 +11,8 @@ namespace Frends.Soap.Request.Helpers;
 /// </summary>
 internal static class SoapMessageBuilder
 {
-    private const string Soap11Namespace = "https://schemas.xmlsoap.org/soap/envelope/";
-    private const string Soap12Namespace = "https://www.w3.org/2003/05/soap-envelope";
+    private const string Soap11Namespace = "http://schemas.xmlsoap.org/soap/envelope/";
+    private const string Soap12Namespace = "http://www.w3.org/2003/05/soap-envelope";
 
     /// <summary>
     /// Wraps the given body XML inside a SOAP envelope according to the specified version.

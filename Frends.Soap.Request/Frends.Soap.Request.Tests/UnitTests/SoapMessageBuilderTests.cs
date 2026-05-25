@@ -31,7 +31,7 @@ public class SoapMessageBuilderTests
         var envelope = SoapMessageBuilder.BuildEnvelope(SimpleBody, SoapVersion.Soap11, options);
 
         // Assert
-        Assert.That(envelope, Does.Contain("https://schemas.xmlsoap.org/soap/envelope/"));
+        Assert.That(envelope, Does.Contain("http://schemas.xmlsoap.org/soap/envelope/"));
         Assert.That(envelope, Does.Contain("<soap:Envelope"));
         Assert.That(envelope, Does.Contain("<soap:Body"));
         Assert.That(envelope, Does.Contain("GetWeather"));
@@ -58,7 +58,7 @@ public class SoapMessageBuilderTests
         var envelope = SoapMessageBuilder.BuildEnvelope(SimpleBody, SoapVersion.Soap12, options);
 
         // Assert
-        Assert.That(envelope, Does.Contain("https://www.w3.org/2003/05/soap-envelope"));
+        Assert.That(envelope, Does.Contain("http://www.w3.org/2003/05/soap-envelope"));
         Assert.That(envelope, Does.Contain("<soap:Envelope"));
         Assert.That(envelope, Does.Contain("<soap:Body"));
         Assert.That(envelope, Does.Contain("GetWeather"));
@@ -102,7 +102,7 @@ public class SoapMessageBuilderTests
         doc.LoadXml(fault);
 
         var nsManager = new XmlNamespaceManager(doc.NameTable);
-        nsManager.AddNamespace("soap", "https://schemas.xmlsoap.org/soap/envelope/");
+        nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
 
         var faultNode = doc.SelectSingleNode("//soap:Fault", nsManager);
         Assert.That(faultNode, Is.Not.Null);
@@ -125,7 +125,7 @@ public class SoapMessageBuilderTests
         doc.LoadXml(fault);
 
         var nsManager = new XmlNamespaceManager(doc.NameTable);
-        nsManager.AddNamespace("soap", "https://www.w3.org/2003/05/soap-envelope");
+        nsManager.AddNamespace("soap", "http://www.w3.org/2003/05/soap-envelope");
 
         var faultNode = doc.SelectSingleNode("//soap:Fault", nsManager);
         Assert.That(faultNode, Is.Not.Null);

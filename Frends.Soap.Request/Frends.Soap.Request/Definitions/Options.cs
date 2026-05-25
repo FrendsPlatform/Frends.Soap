@@ -157,7 +157,7 @@ public class Options
     [DisplayFormat(DataFormatString = "Text")]
     [UIHint(nameof(IncludeWsTrust), "", true)]
     [RequiredIf(nameof(IncludeWsTrust), true)]
-    public string WsTrustTokenType { get; set; }
+    public string WsTrustTokenType { get; set; } = string.Empty;
 
     /// <summary>
     /// WS-Trust AppliesTo address.

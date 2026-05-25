@@ -133,7 +133,7 @@ public class WsSpecificationsTests
         var doc = new XmlDocument();
         doc.LoadXml(envelope);
         var nsManager = new XmlNamespaceManager(doc.NameTable);
-        nsManager.AddNamespace("soap", "https://www.w3.org/2003/05/soap-envelope");
+        nsManager.AddNamespace("soap", "http://www.w3.org/2003/05/soap-envelope");
 
         var headerNodes = doc.SelectNodes("//soap:Header", nsManager);
         Assert.That(headerNodes.Count, Is.EqualTo(0));

@@ -129,7 +129,7 @@ public class SoapRequestFunctionalTests
         Assert.That(result.XmlResponse, Does.Contain("Envelope"));
         Assert.That(
             result.XmlResponse,
-            Does.Contain("https://schemas.xmlsoap.org/soap/envelope/"));
+            Does.Contain("http://schemas.xmlsoap.org/soap/envelope/"));
         Assert.That(result.Error, Is.Null);
     }
 
@@ -171,7 +171,7 @@ public class SoapRequestFunctionalTests
         Assert.That(result.XmlResponse, Does.Contain("Envelope"));
         Assert.That(
             result.XmlResponse,
-            Does.Contain("https://www.w3.org/2003/05/soap-envelope"));
+            Does.Contain("http://www.w3.org/2003/05/soap-envelope"));
 
         // Verify response is valid XML
         var doc = new XmlDocument();
