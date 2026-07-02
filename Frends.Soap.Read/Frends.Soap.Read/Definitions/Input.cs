@@ -15,12 +15,5 @@ public class Input
     [DisplayFormat(DataFormatString = "Text")]
     [DefaultValue("Lorem ipsum dolor sit amet.")]
     [Required]
-    public string Content { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Number of times to repeat the input string.
-    /// </summary>
-    /// <example>2</example>
-    [DefaultValue(3)]
-    public int Repeat { get; set; }
+    public string Payload { get; set; } = string.Empty;
 }

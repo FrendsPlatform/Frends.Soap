@@ -29,19 +29,11 @@ public static class Soap
         {
             ValidationHandler.Run(input, options);
 
-            // Cancellation token should be provided to methods that support it
-            // and checked during long-running operations, e.g., loops
-            cancellationToken.ThrowIfCancellationRequested();
 
-            if (input.Repeat < 0)
-                throw new Exception("Repeat count cannot be negative.");
-
-            var output = string.Join(options.Delimiter, Enumerable.Repeat(input.Content, input.Repeat));
 
             return new Result
             {
                 Success = true,
-                Output = output,
                 Error = null,
             };
         }

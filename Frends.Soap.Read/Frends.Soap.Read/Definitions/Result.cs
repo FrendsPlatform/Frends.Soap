@@ -12,10 +12,22 @@ public class Result
     public bool Success { get; set; }
 
     /// <summary>
-    /// Input string repeated the specified number of times.
+    /// Body of the Payload
     /// </summary>
     /// <example>foobar,foobar</example>
-    public string Output { get; set; }
+    public string Body { get; set; }
+
+    /// <summary>
+    /// Headers from Payload if any
+    /// </summary>
+    /// <example>foobar,foobar</example>
+    public string Headers { get; set; }
+
+    /// <summary>
+    /// Fault message from Payload if any.
+    /// </summary>
+    /// <example>foobar,foobar</example>
+    public string Fault { get; set; }
 
     /// <summary>
     /// Error that occurred during task execution.
