@@ -5,6 +5,7 @@ Frends tasks for Soap related operations.
 # Tasks
 
 * [Frends.Soap.Request](Frends.Soap.Request/README.md)
+* [Frends.Soap.Read](Frends.Soap.Read/README.md)
 
 # Contributing
 

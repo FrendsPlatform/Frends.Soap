@@ -1,4 +1,7 @@
-﻿namespace Frends.Soap.Read.Definitions;
+﻿using System.Collections.Generic;
+using Frends.Soap.Read.Definitions.Enums;
+
+namespace Frends.Soap.Read.Definitions;
 
 /// <summary>
 /// Result of the task.
@@ -12,22 +15,28 @@ public class Result
     public bool Success { get; set; }
 
     /// <summary>
-    /// Body of the Payload
+    /// SOAP version detected from the payload envelope.
     /// </summary>
-    /// <example>foobar,foobar</example>
+    /// <example>Soap11</example>
+    public SoapVersion SoapVersion { get; set; }
+
+    /// <summary>
+    /// Inner XML of the SOAP Body element from the payload.
+    /// </summary>
+    /// <example>&lt;GetPriceResponse xmlns="http://tempuri.org/"&gt;&lt;Price&gt;1.99&lt;/Price&gt;&lt;/GetPriceResponse&gt;</example>
     public string Body { get; set; }
 
     /// <summary>
-    /// Headers from Payload if any
+    /// Headers found inside the SOAP Header element of the payload. Empty when there is no Header element.
     /// </summary>
-    /// <example>foobar,foobar</example>
-    public string Headers { get; set; }
+    /// <example>[{ Name: "Action", Value: "urn:DoWork" }]</example>
+    public List<SoapHeader> Headers { get; set; }
 
     /// <summary>
-    /// Fault message from Payload if any.
+    /// SOAP Fault contained in the payload body, or null when the payload contains no fault.
     /// </summary>
-    /// <example>foobar,foobar</example>
-    public string Fault { get; set; }
+    /// <example>object { string Code, string Reason, string Actor, string Detail, string Xml }</example>
+    public SoapFault Fault { get; set; }
 
     /// <summary>
     /// Error that occurred during task execution.
