@@ -20,7 +20,7 @@ public static class Soap
     /// <param name="input">Essential parameters.</param>
     /// <param name="options">Additional parameters.</param>
     /// <param name="cancellationToken">A cancellation token provided by Frends Platform.</param>
-    /// <returns>object { bool Success, string Output, object Error { string Message, Exception AdditionalInfo } }</returns>
+    /// <returns>object { bool Success, enum SoapVersion, string Body, List&lt;object&gt; Headers {string Name, string Namespace, string Value, string Xml }, object SoapFault { string Code, string Reason, string Actor, string Detail, string Xml } , object Error { string Message, Exception AdditionalInfo } }</returns>
     public static Result Read(
         [PropertyTab] Input input,
         [PropertyTab] Options options,

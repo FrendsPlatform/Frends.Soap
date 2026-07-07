@@ -101,8 +101,8 @@ internal static class SoapHandler
 
     private static SoapFault ReadSoap12Fault(XmlElement faultElement)
     {
-        var code = FindDescendant(faultElement, "Code");
-        var reason = FindDescendant(faultElement, "Reason");
+        var code = FindChild(faultElement, "Code");
+        var reason = FindChild(faultElement, "Reason");
 
         return new SoapFault
         {
@@ -116,19 +116,19 @@ internal static class SoapHandler
 
     private static string GetChildText(XmlElement parent, string localName)
     {
-        var child = FindDescendant(parent, localName);
+        var child = FindChild(parent, localName);
 
         return child?.InnerText;
     }
 
     private static string GetChildInnerXml(XmlElement parent, string localName)
     {
-        var child = FindDescendant(parent, localName);
+        var child = FindChild(parent, localName);
 
         return child?.InnerXml.Trim();
     }
 
-    private static XmlElement FindDescendant(XmlElement parent, string localName)
+    private static XmlElement FindChild(XmlElement parent, string localName)
     {
         foreach (var node in parent.ChildNodes)
         {
